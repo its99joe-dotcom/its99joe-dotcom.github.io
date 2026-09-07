@@ -1,0 +1,1159 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>有志象 - 定语指令升级实验室</title>
+    <style>
+        :root {
+            --neon-blue: #00f2fe;
+            --neon-green: #00ff87;
+            --neon-pink: #ff007f;
+            --bg-dark: #070d1e;
+            --card-bg: rgba(13, 22, 51, 0.9);
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            background-color: var(--bg-dark);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(0, 242, 254, 0.12) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(255, 0, 127, 0.08) 0px, transparent 50%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        /* 1280x720 宽屏标准尺寸 */
+        #game-container {
+            width: 1280px;
+            height: 720px;
+            background: var(--card-bg);
+            border-radius: 20px;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            box-shadow: 0 0 50px rgba(0, 242, 254, 0.2), inset 0 0 30px rgba(0, 242, 254, 0.05);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            border: 2px solid rgba(0, 242, 254, 0.3);
+        }
+        
+        /* 顶部面板 */
+        .hud-panel {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 18px 35px;
+            background: rgba(4, 8, 24, 0.85);
+            border-bottom: 1px solid rgba(0, 242, 254, 0.25);
+            color: var(--neon-blue);
+            font-size: 16px;
+            letter-spacing: 2px;
+            font-weight: bold;
+        }
+        .progress-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            width: 350px;
+        }
+        .progress-bar-bg {
+            flex: 1;
+            height: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(0, 242, 254, 0.25);
+            border-radius: 5px;
+            overflow: hidden;
+            position: relative;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #0072ff, var(--neon-blue));
+            box-shadow: 0 0 10px var(--neon-blue);
+            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .main-layout {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+        /* 左侧舞台 */
+        .left-stage {
+            width: 30%;
+            background: rgba(8, 16, 38, 0.4);
+            border-right: 1px solid rgba(0, 242, 254, 0.2);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 30px;
+            box-sizing: border-box;
+        }
+        
+        /* 形象舞台区 */
+        .stage-glow-base {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 240px;
+        }
+        .avatar-box {
+            position: relative;
+            width: 220px;
+            height: 220px;
+            border-radius: 50%;
+            background: #09132e;
+            border: 2px solid var(--neon-blue);
+            box-shadow: 0 0 25px rgba(0, 242, 254, 0.25);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            animation: neonFloat 4s ease-in-out infinite;
+            transition: all 0.3s;
+        }
+        .youzhi-img {
+            width: 180px;
+            height: 195px;
+        }
+        
+        @keyframes neonFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-6px); }
+        }
+        
+        /* 状态反馈触发器 */
+        .avatar-box.success-glow { border-color: var(--neon-green); box-shadow: 0 0 35px var(--neon-green); }
+        .avatar-box.error-glow { border-color: var(--neon-pink); box-shadow: 0 0 35px var(--neon-pink); animation: shake 0.4s ease-in-out; }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-6px); }
+            40%, 80% { transform: translateX(6px); }
+        }
+
+        .dialogue-box {
+            margin-top: 25px;
+            padding: 15px 20px;
+            background: rgba(5, 10, 28, 0.9);
+            border-radius: 12px;
+            box-shadow: 0 0 15px rgba(0, 242, 254, 0.15);
+            font-size: 17px;
+            color: #a5f3fc;
+            line-height: 1.6;
+            text-align: center;
+            border: 1px solid rgba(0, 242, 254, 0.35);
+            width: 100%;
+            box-sizing: border-box;
+            min-height: 110px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+        .dialogue-box.success-style { border-color: var(--neon-green); color: var(--neon-green); box-shadow: 0 0 15px rgba(0,255,135,0.25); }
+        .dialogue-box.error-style { border-color: var(--neon-pink); color: var(--neon-pink); box-shadow: 0 0 15px rgba(255,0,127,0.25); }
+
+        /* 右侧交互面板 */
+        .right-interaction {
+            flex: 1;
+            padding: 28px 40px;
+            display: flex;
+            flex-direction: column;
+            background: rgba(3, 6, 18, 0.25);
+            box-sizing: border-box;
+            position: relative;
+            overflow: hidden;
+        }
+        .screen { display: none; width: 100%; height: 100%; flex-direction: column; }
+        .screen.active { display: flex; }
+        
+        .title { font-size: 21px; letter-spacing: 3px; font-weight: bold; color: var(--neon-blue); margin-bottom: 15px; text-shadow: 0 0 10px rgba(0, 242, 254, 0.6); text-transform: uppercase; }
+        
+        /* 第一关 */
+        .example-phrase { 
+            font-size: 38px; 
+            font-weight: bold; 
+            color: #ffffff; 
+            margin-bottom: 25px; 
+            background: rgba(0, 242, 254, 0.04); 
+            padding: 20px; 
+            border-radius: 12px; 
+            border: 1px solid rgba(0, 242, 254, 0.25);
+            box-shadow: inset 0 0 20px rgba(0, 242, 254, 0.1);
+            text-align: center;
+            letter-spacing: 1px;
+        }
+        .options-container { display: flex; flex-direction: column; gap: 12px; width: 100%; }
+        .btn {
+            background: rgba(15, 32, 67, 0.55);
+            border: 1px solid rgba(0, 242, 254, 0.3);
+            padding: 14px 22px;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #cbd5e1;
+            text-align: left;
+        }
+        .btn:hover { border-color: var(--neon-blue); background: rgba(0, 242, 254, 0.18); color: #fff; box-shadow: 0 0 15px rgba(0, 242, 254, 0.35); }
+        .btn.correct { background: rgba(0, 255, 135, 0.2) !important; border-color: var(--neon-green) !important; color: #fff !important; text-shadow: 0 0 5px var(--neon-green); box-shadow: 0 0 18px rgba(0, 255, 135, 0.4); }
+        .btn.wrong { background: rgba(255, 0, 127, 0.2) !important; border-color: var(--neon-pink) !important; color: #fff !important; text-shadow: 0 0 5px var(--neon-pink); box-shadow: 0 0 18px rgba(255, 0, 127, 0.4); }
+
+        .feedback { margin-top: 12px; font-size: 17px; font-weight: bold; min-height: 25px; opacity: 0; transition: opacity 0.3s; }
+        .feedback.show { opacity: 1; }
+        
+        /* 第二关 */
+        .drag-instruction { font-size: 16px; color: #94a3b8; margin-bottom: 15px; }
+        .drag-layout { display: flex; gap: 20px; width: 100%; flex: 1; align-items: stretch; min-height: 0; margin-bottom: 6px; }
+        .drag-items-pool { width: 44%; display: flex; flex-direction: column; gap: 8px; justify-content: center; min-height: 0; }
+        .drag-item { background: rgba(18, 38, 80, 0.95); color: #ffffff; border: 1px solid rgba(0, 242, 254, 0.45); padding: 10px 16px; border-radius: 10px; text-align: center; font-weight: bold; cursor: grab; user-select: none; touch-action: none; font-size: 16px; box-shadow: 0 4px 8px rgba(0,0,0,0.35); transition: background-color 0.2s, border-color 0.2s; }
+        
+        .drop-zones-pool { width: 56%; display: flex; flex-direction: column; gap: 10px; min-height: 0; }
+        .drop-zone { flex: 1; background: rgba(5, 9, 24, 0.8); border: 1.5px dashed rgba(0, 242, 254, 0.4); border-radius: 12px; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 9px 10px; gap: 6px; box-shadow: inset 0 0 15px rgba(0,0,0,0.6); overflow-y: auto; min-height: 0; }
+        .drop-zone-title { font-size: 15px; font-weight: bold; color: var(--neon-blue); margin-bottom: 2px; text-transform: uppercase; letter-spacing: 1px; }
+        .drop-zone.hover { background: rgba(0, 242, 254, 0.1); border-color: var(--neon-blue); box-shadow: 0 0 15px rgba(0, 242, 254, 0.25); }
+        
+        /* 第三关 */
+        .sentence-list { width: 58%; display: flex; flex-direction: column; gap: 15px; justify-content: center; }
+        .sentence-box { background: rgba(18, 30, 61, 0.4); border: 1px solid rgba(0, 242, 254, 0.18); padding: 16px; border-radius: 10px; color: #ffffff; font-size: 18px; line-height: 1.5; display: flex; align-items: center; flex-wrap: wrap; }
+        .sentence-box .chinese-desc { width: 100%; font-size: 15px; color: #64748b; margin-top: 6px; }
+        .drop-slot { display: inline-block; min-width: 110px; height: 32px; border-bottom: 2px dashed rgba(0, 242, 254, 0.7); background: rgba(0, 242, 254, 0.05); margin: 0 6px; border-radius: 5px; vertical-align: middle; transition: all 0.2s; }
+        .drop-slot.hover { background: rgba(0, 242, 254, 0.2); border-bottom-color: var(--neon-blue); }
+        .drop-slot.filled { border-bottom: none; background: transparent; min-width: auto; height: auto; }
+        .drop-slot .drag-item { padding: 5px 12px; font-size: 16px; box-shadow: none; cursor: default; }
+        
+        /* 下一步按钮 */
+        .next-btn-container {
+            margin-top: 6px;
+            display: flex;
+            justify-content: flex-end;
+            width: 100%;
+            padding-top: 4px;
+            min-height: 46px;
+        }
+        .next-btn { 
+            background: linear-gradient(90deg, #0072ff, #00f2fe); 
+            color: white; 
+            border: none; 
+            padding: 12px 30px; 
+            border-radius: 10px; 
+            font-size: 15px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            display: none; 
+            box-shadow: 0 0 18px rgba(0, 242, 254, 0.45); 
+        }
+
+        
+
+        /* SVG线条基础样式定义 */
+        .soul-line {
+            fill: none;
+            stroke: url(#neon-gradient);
+            stroke-width: 2.5;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            filter: url(#neon-glow);
+            transition: stroke 0.3s, stroke-width 0.3s;
+        }
+        .soul-text {
+            fill: none;
+            stroke: url(#neon-gradient);
+            stroke-width: 1.8;
+            font-family: 'Microsoft YaHei', sans-serif;
+            font-weight: bold;
+            filter: url(#neon-glow);
+            transition: stroke 0.3s;
+        }
+
+        /* 通关庆祝页：沿用原版霓虹视觉 */
+        #screen-celebration {
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+        .celebrate-icon {
+            width: 110px;
+            height: 110px;
+            border-radius: 50%;
+            border: 2px solid var(--neon-green);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 52px;
+            color: var(--neon-green);
+            background: rgba(0,255,135,0.08);
+            box-shadow: 0 0 30px rgba(0,255,135,0.28);
+            margin-bottom: 18px;
+            animation: celebratePulse 1.8s ease-in-out infinite;
+        }
+        @keyframes celebratePulse {
+            0%,100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        .celebrate-title {
+            font-size: 34px;
+            font-weight: bold;
+            color: #fff;
+            letter-spacing: 2px;
+            text-shadow: 0 0 12px rgba(0,255,135,0.45);
+            margin-bottom: 10px;
+        }
+        .celebrate-subtitle {
+            font-size: 21px;
+            font-weight: bold;
+            color: var(--neon-green);
+            margin-bottom: 14px;
+        }
+        .celebrate-text {
+            font-size: 17px;
+            line-height: 1.7;
+            color: #cbd5e1;
+            max-width: 620px;
+            margin-bottom: 22px;
+        }
+        .celebrate-btn {
+            width: 190px;
+            text-align: center;
+            color: #fff;
+            border-color: var(--neon-green);
+            background: rgba(0,255,135,0.08);
+        }
+
+
+        /* ===== 第三关方案A：主句中心化 ===== */
+        #screen-synthesis {
+            align-items: center;
+            text-align: center;
+        }
+
+        #screen-synthesis .title {
+            width: 100%;
+            margin-bottom: 6px;
+        }
+
+        .synth-step {
+            font-size: 14px;
+            letter-spacing: 2px;
+            color: var(--neon-blue);
+            opacity: .85;
+            margin-bottom: 14px;
+        }
+
+        .synth-focus-card {
+            width: 100%;
+            min-height: 205px;
+            border: 1px solid rgba(0, 242, 254, 0.28);
+            border-radius: 16px;
+            background:
+                radial-gradient(circle at 50% 20%, rgba(0,242,254,.08), transparent 45%),
+                rgba(18, 30, 61, 0.34);
+            box-shadow: inset 0 0 28px rgba(0,0,0,.35), 0 0 18px rgba(0,242,254,.06);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 22px 26px;
+            margin-bottom: 16px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .synth-target-label {
+            font-size: 13px;
+            letter-spacing: 2px;
+            color: #64748b;
+            margin-bottom: 18px;
+        }
+
+        .synth-main-sentence {
+            font-size: 30px;
+            line-height: 1.35;
+            font-weight: 700;
+            color: #fff;
+            max-width: 720px;
+        }
+
+        .synth-blank {
+            display: inline-flex;
+            min-width: 145px;
+            height: 42px;
+            padding: 0 10px;
+            margin: 0 6px;
+            border-bottom: 2px solid var(--neon-blue);
+            color: var(--neon-blue);
+            align-items: center;
+            justify-content: center;
+            vertical-align: middle;
+            transition: .25s ease;
+        }
+
+        .synth-blank.filled {
+            color: var(--neon-green);
+            border-bottom-color: var(--neon-green);
+            text-shadow: 0 0 10px rgba(0,255,135,.28);
+        }
+
+        .synth-cn {
+            font-size: 16px;
+            color: #94a3b8;
+            margin-top: 16px;
+        }
+
+        .synth-choice-label {
+            font-size: 15px;
+            color: #94a3b8;
+            margin-bottom: 10px;
+        }
+
+        .synth-choice-grid {
+            width: 100%;
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .synth-choice {
+            min-height: 68px;
+            border: 1.5px solid rgba(0,242,254,.42);
+            border-radius: 12px;
+            background: rgba(18,30,61,.52);
+            color: #fff;
+            font-size: 22px;
+            line-height: 1.2;
+            font-weight: 700;
+            padding: 10px 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: .2s ease;
+            box-shadow: 0 0 12px rgba(0,242,254,.05);
+        }
+
+        .synth-choice:hover {
+            border-color: var(--neon-blue);
+            background: rgba(0,242,254,.10);
+            transform: translateY(-2px);
+        }
+
+        .synth-choice.correct {
+            border-color: var(--neon-green);
+            color: var(--neon-green);
+            background: rgba(0,255,135,.10);
+            box-shadow: 0 0 16px rgba(0,255,135,.16);
+        }
+
+        .synth-choice.wrong {
+            border-color: var(--neon-pink);
+            color: #ff8bbb;
+            background: rgba(255,0,127,.08);
+            animation: synthShake .28s ease;
+        }
+
+        @keyframes synthShake {
+            0%,100% { transform: translateX(0); }
+            35% { transform: translateX(-5px); }
+            70% { transform: translateX(5px); }
+        }
+
+        .synth-center-feedback {
+            min-height: 26px;
+            margin-top: 10px;
+            text-align: center;
+            font-size: 16px;
+        }
+
+
+        /* ===== 方案A细节优化：投屏字号与层级 ===== */
+
+        /* 第二关：不硬拉到28px，采用更自然的22px主操作字号 */
+        #screen-drag .drag-instruction {
+            font-size: 18px;
+            line-height: 1.5;
+            margin-bottom: 12px;
+        }
+
+        #screen-drag .drag-items-pool .drag-item {
+            font-size: 22px;
+            line-height: 1.25;
+            padding: 11px 14px;
+        }
+
+        #screen-drag .drop-zone-title {
+            font-size: 18px;
+            line-height: 1.25;
+        }
+
+        #screen-drag .drop-zone .drag-item {
+            font-size: 20px;
+            line-height: 1.2;
+            padding: 7px 10px;
+        }
+
+        /* 第三关：中文任务提示明显放大，但仍低于英文主句 */
+        #screen-synthesis .synth-cn {
+            font-size: 20px;
+            line-height: 1.55;
+            color: #b8c4d6;
+            margin-top: 18px;
+        }
+
+        #screen-synthesis .synth-choice-label {
+            font-size: 18px;
+            line-height: 1.4;
+            margin-bottom: 12px;
+        }
+
+        /* 只保留一条干净的霓虹横线，不显示下划线字符 */
+        #screen-synthesis .synth-blank {
+            min-width: 150px;
+            height: 38px;
+            padding: 0 8px 2px;
+            margin: 0 7px;
+            border: 0;
+            border-bottom: 2px solid var(--neon-blue);
+            text-decoration: none;
+            line-height: 1;
+        }
+
+        #screen-synthesis .synth-blank.filled {
+            height: auto;
+            min-height: 38px;
+            border-bottom: 2px solid var(--neon-green);
+            padding-bottom: 3px;
+        }
+
+        /* 主句略收至29px，让中英文层级更协调 */
+        #screen-synthesis .synth-main-sentence {
+            font-size: 29px;
+            line-height: 1.4;
+        }
+
+        /* 候选项适度放大，不显突兀 */
+        #screen-synthesis .synth-choice {
+            font-size: 23px;
+            min-height: 70px;
+        }
+
+        /* 中间任务卡稍增中文可读空间 */
+        #screen-synthesis .synth-focus-card {
+            padding: 20px 24px;
+            min-height: 215px;
+        }
+
+
+        /* 最后一题长从句：空间不足时自然分行，保持清晰字号 */
+        #screen-synthesis .synth-choice {
+            white-space: normal;
+            word-break: normal;
+            overflow-wrap: break-word;
+        }
+
+        #screen-synthesis .synth-choice-grid.long-clause-mode {
+            grid-template-columns: 1fr;
+            gap: 9px;
+            max-width: 660px;
+            margin: 0 auto;
+        }
+
+        #screen-synthesis .synth-choice-grid.long-clause-mode .synth-choice {
+            min-height: 52px;
+            font-size: 22px;
+            padding: 9px 16px;
+        }
+
+
+        /* 第三题：长从句填入后保持整句连贯，避免把句尾挤到下一行 */
+        #screen-synthesis .synth-main-sentence.final-clause-question {
+            font-size: 27px;
+            white-space: nowrap;
+        }
+
+        #screen-synthesis .synth-main-sentence.final-clause-question .synth-blank {
+            min-width: 135px;
+        }
+
+        #screen-synthesis .synth-main-sentence.final-clause-question .synth-blank.filled {
+            display: inline;
+            min-width: 0;
+            height: auto;
+            min-height: 0;
+            padding: 0 3px 3px;
+            margin: 0 4px;
+            white-space: nowrap;
+            vertical-align: baseline;
+        }
+
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div class="hud-panel">
+        <div id="hud-stage">有志象：定语指令升级实验室</div>
+        <div class="progress-container">
+            <span id="hud-progress-text" style="font-size: 14px;">0%</span>
+            <div class="progress-bar-bg">
+                <div id="progress-fill" class="progress-bar-fill"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-layout">
+        <div class="left-stage">
+            <div class="stage-glow-base">
+                <div class="avatar-box" id="youzhi-box">
+                    <svg id="youzhi-avatar" class="youzhi-img" viewBox="0 0 120 130">
+                        <defs>
+                            <filter id="neon-glow" x="-40%" y="-40%" width="180%" height="180%">
+                                <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
+                                <feMerge>
+                                    <feMergeNode in="coloredBlur"/>
+                                    <feMergeNode in="coloredBlur"/>
+                                    <feMergeNode in="SourceGraphic"/>
+                                </feMerge>
+                            </filter>
+                            
+                            <linearGradient id="neon-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#00f2fe" />
+                                <stop offset="60%" stop-color="#a5f3fc" />
+                                <stop offset="100%" stop-color="#ff007f" />
+                            </linearGradient>
+
+                            <linearGradient id="success-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#00ff87" />
+                                <stop offset="100%" stop-color="#60efff" />
+                            </linearGradient>
+
+                            <linearGradient id="error-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#ff007f" />
+                                <stop offset="100%" stop-color="#ff758c" />
+                            </linearGradient>
+                        </defs>
+
+                        <path id="main-outline" class="soul-line" d="
+                            M 35,15 
+                            C 35,10 85,10 85,15 
+                            C 92,15 95,20 95,28 
+                            L 95,43 
+                            L 104,41 
+                            C 107,41 106,47 100,51 
+                            L 83,61 
+                            L 83,82 
+                            L 80,115 
+                            C 80,122 68,122 68,115 
+                            L 68,95 
+                            L 52,95 
+                            L 52,115 
+                            C 52,122 40,122 40,115 
+                            L 37,82 
+                            L 37,61 
+                            L 20,51 
+                            C 14,47 13,41 16,41 
+                            L 25,43 
+                            L 25,28 
+                            C 25,20 28,15 35,15 Z
+                        " />
+                        
+                        <path id="ear-lines" class="soul-line" d="M 37,22 L 37,38 M 83,22 L 83,38" />
+                        <g id="elephant-eyes">
+                            <path class="soul-line" d="M 48,25 Q 50,23 51,26 M 69,26 Q 70,23 72,25" />
+                        </g>
+                        <path id="elephant-trunk" class="soul-line" d="M 54,32 Q 51,48 64,48 Q 70,48 68,39 Q 66,34 61,37" />
+                        <path id="tshirt-line" class="soul-line" d="M 37,82 L 83,82" />
+                        <text x="60" y="73" id="logo-text" class="soul-text" font-size="16" text-anchor="middle">志</text>
+                    </svg>
+                </div>
+            </div>
+            
+            <div class="dialogue-box" id="dialogue">有志象 ( 💡 )：我已经发现：Word、Phrase、Clause 都可以作定语（修饰指令）。请帮我完成最终的测试！</div>
+        </div>
+
+        <div class="right-interaction">
+            <div id="screen-start" class="screen active" style="justify-content: center; align-items: center;">
+                <h2 style="color: #ffffff; text-shadow: 0 0 12px var(--neon-blue); margin-bottom: 8px; font-size: 28px;">定语“指令升级”实验室</h2>
+                <p style="color: var(--neon-blue); font-size: 17px; margin-bottom: 35px; letter-spacing: 2px;">三大定语指令：形态辨析 · 空间位置重塑 · 场景代码合成</p>
+                <button class="btn" style="width: 220px; text-align:center; background: rgba(0, 242, 254, 0.1); border-color: var(--neon-blue); color: #fff;" onclick="nextScreen(1)">启动指令控制台 ➔</button>
+            </div>
+
+            <div id="screen-quiz" class="screen">
+                <div class="title" id="quiz-title">第一阶段：指令形态判定 (Stage 1/3)</div>
+                <div class="example-phrase" id="quiz-phrase">Example</div>
+                <div style="font-size: 16px; color:#94a3b8; margin-bottom: 12px;">指令分析：判断以下高亮或单独的定语属于哪种指令形态？</div>
+                <div class="options-container" id="options-box"></div>
+                <div class="feedback" id="quiz-feedback"></div>
+            </div>
+
+            <div id="screen-drag" class="screen">
+                <div class="title" id="drag-title">第二阶段：指令位置分类</div>
+                <div class="drag-instruction" id="drag-ins">根据定语长短规律（短前长后），将这 6 个修饰指令拖拽至正确的物理空间插槽：</div>
+                
+                <div class="drag-layout">
+                    <div class="drag-items-pool" id="drag-items-container"></div>
+                    <div class="drop-zones-pool">
+                        <div class="drop-zone" id="zone-before" data-zone="before">
+                            <div class="drop-zone-title">Before the noun (前置指令槽)</div>
+                        </div>
+                        <div class="drop-zone" id="zone-after" data-zone="after">
+                            <div class="drop-zone-title">After the noun (后置指令槽)</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="feedback" id="drag-feedback"></div>
+            </div>
+
+            <div id="screen-synthesis" class="screen">
+                <div class="title" id="synth-title">第三阶段：场景指令合成</div>
+                <div class="synth-step" id="synth-step">MISSION 1 / 3</div>
+
+                <div class="synth-focus-card">
+                    <div class="synth-target-label">TARGET SENTENCE</div>
+                    <div class="synth-main-sentence" id="synth-main-sentence"></div>
+                    <div class="synth-cn" id="synth-cn"></div>
+                </div>
+
+                <div class="synth-choice-label">选择正确的定语元件完成指令</div>
+                <div class="synth-choice-grid" id="synth-choice-grid"></div>
+
+                <div class="feedback synth-center-feedback" id="synth-feedback"></div>
+            </div>
+
+            <div id="screen-celebration" class="screen">
+                <div class="celebrate-icon">✓</div>
+                <div class="celebrate-title">MISSION COMPLETED</div>
+                <div class="celebrate-subtitle">定语指令升级 · 通关成功</div>
+                <div class="celebrate-text">
+                    Word、Phrase、Clause 三类定语指令已全部识别并正确部署。<br>
+                    “短前长后”规则校准完成，全部测试通过！
+                </div>
+                <button class="btn celebrate-btn" onclick="location.reload()">重新挑战 ➔</button>
+            </div>
+
+            <div class="next-btn-container">
+                <button class="next-btn" id="global-next-btn" onclick="handleNextStage()">确认加载下一波指令 ➔</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const quizData = [
+    { type: "quiz", title: "第一关：指令辨析 (1/3)", phrase: "talented", options: ["Word (单词定语)", "Phrase (短语定语)", "Clause (从句定语)"], correct: 0, feedback: "单形容词指令，常规且精炼。" },
+    { type: "quiz", title: "第一关：指令辨析 (2/3)", phrase: "on the wall", options: ["Word (单词定语)", "Phrase (短语定语)", "Clause (从句定语)"], correct: 1, feedback: "介词短语指令，物理空间拓展。" },
+    { type: "quiz", title: "第一关：指令辨析 (3/3)", phrase: "which is parked outside", options: ["Word (单词定语)", "Phrase (短语定语)", "Clause (从句定语)"], correct: 2, feedback: "引导词关系从句，最全备的信息指令。" },
+    {
+        type: "drag",
+        title: "第二关：位置重组",
+        items: [
+            { id: "d1", text: "beautiful", target: "before" },
+            { id: "d2", text: "from that school", target: "after" },
+            { id: "d3", text: "heavy", target: "before" },
+            { id: "d4", text: "who speaks French", target: "after" },
+            { id: "d5", text: "under the keyboard", target: "after" },
+            { id: "d6", text: "interesting", target: "before" }
+        ],
+        summary: "完美的归类！定语修饰指令运转极佳：短前，长后！"
+    },
+    {
+        type: "synthesis",
+        title: "第三关：指令场景合成",
+        items: [
+            { id: "s1", text: "beautiful", isCorrect: true },
+            { id: "s2", text: "on the wall", isCorrect: true },
+            { id: "s3", text: "which is parked outside", isCorrect: true },
+            { id: "s4", text: "heavy", isCorrect: false },
+            { id: "s5", text: "under the keyboard", isCorrect: false },
+            { id: "s6", text: "who speaks French", isCorrect: false }
+        ],
+        summary: "合体指令全部注入成功！名词已具备精准的修饰属性。"
+    }
+];
+
+let currentStage = 0;
+const totalStages = 5;
+
+const dialogueEl = document.getElementById('dialogue');
+const nextBtn = document.getElementById('global-next-btn');
+const avatarBoxEl = document.getElementById('youzhi-box');
+const hudStageEl = document.getElementById('hud-stage');
+const progressTextEl = document.getElementById('hud-progress-text');
+const progressFillEl = document.getElementById('progress-fill');
+
+// SVG元素联动控制
+const mainOutline = document.getElementById('main-outline');
+const earLines = document.getElementById('ear-lines');
+const elephantTrunk = document.getElementById('elephant-trunk');
+const elephantEyes = document.getElementById('elephant-eyes');
+const tshirtLine = document.getElementById('tshirt-line');
+const logoText = document.getElementById('logo-text');
+
+function updateHUD() {
+    if (currentStage === 0) {
+        hudStageEl.innerText = "有志象：定语指令升级实验室";
+        progressTextEl.innerText = "0%";
+        progressFillEl.style.width = "0%";
+    } else {
+        const percent = Math.round((currentStage / totalStages) * 100);
+        hudStageEl.innerText = currentStage <= totalStages ? `升级链路: ${currentStage}/${totalStages}` : "COMPLETED";
+        progressTextEl.innerText = `${Math.min(percent, 100)}%`;
+        progressFillEl.style.width = `${Math.min(percent, 100)}%`;
+    }
+}
+
+// 联动效果：实时根据回答正确与否，改变霓虹有志象的灯光色调与表情
+function triggerVisualFeedback(isCorrect, textMessage) {
+    avatarBoxEl.classList.remove('success-glow', 'error-glow');
+    dialogueEl.classList.remove('success-style', 'error-style');
+    void avatarBoxEl.offsetWidth; // 触发重绘
+    
+    const elements = [mainOutline, earLines, elephantTrunk, tshirtLine, logoText];
+
+    if (isCorrect) {
+        avatarBoxEl.classList.add('success-glow');
+        dialogueEl.classList.add('success-style');
+        dialogueEl.innerHTML = `有志象 ( ๑•̀ㅂ•́)و✧ ：<br>${textMessage}`;
+        
+        // 正确反馈变绿
+        elements.forEach(el => { if(el) el.style.stroke = 'url(#success-gradient)'; });
+        logoText.style.stroke = 'url(#success-gradient)';
+        
+        // 眼睛化为快乐弯角
+        elephantEyes.innerHTML = `
+            <path class="soul-line" d="M 48,27 Q 50,22 52,27 M 68,27 Q 70,22 72,27" style="stroke: url(#success-gradient);" />
+        `;
+    } else {
+        avatarBoxEl.classList.add('error-glow');
+        dialogueEl.classList.add('error-style');
+        dialogueEl.innerHTML = `有志象 ( T ˚_˚ T ) ：<br>${textMessage}`;
+        
+        // 错误反馈变红
+        elements.forEach(el => { if(el) el.style.stroke = 'url(#error-gradient)'; });
+        logoText.style.stroke = 'url(#error-gradient)';
+        
+        // 眼睛流泪/委屈线
+        elephantEyes.innerHTML = `
+            <path class="soul-line" d="M 47,24 L 52,27 M 73,24 L 68,27" style="stroke: url(#error-gradient);" />
+        `;
+        
+        setTimeout(() => {
+            avatarBoxEl.classList.remove('error-glow');
+        }, 500);
+    }
+}
+
+// 待机状态恢复
+function resetDialogueStyle() {
+    dialogueEl.classList.remove('success-style', 'error-style');
+    
+    const elements = [mainOutline, earLines, elephantTrunk, tshirtLine, logoText];
+    elements.forEach(el => { if(el) el.style.stroke = 'url(#neon-gradient)'; });
+    logoText.style.stroke = 'url(#neon-gradient)';
+    
+    // 恢复标准眼睛
+    elephantEyes.innerHTML = `
+        <path class="soul-line" d="M 48,25 Q 50,23 51,26 M 69,26 Q 70,23 72,25" />
+    `;
+
+    if (currentStage === 0) {
+        dialogueEl.innerHTML = `有志象 ( 💡 ) ：我已经发现：Word、Phrase、Clause 都可以作定语（修饰指令）。请帮我完成最终的测试！`;
+    } else if (currentStage >= 1 && currentStage <= 3) {
+        dialogueEl.innerHTML = `有志象 ( 💡 ) ：第一关！形态判定。请帮我分析右侧这个高亮定语的物理形态属于哪一种？`;
+    } else if (currentStage === 4) {
+        dialogueEl.innerHTML = `定语指令 ( ⚙️ ) ：第二关！触发【短前长后】法向力场。请把这 6 个定语卡片拖拽分类到对应的物理槽中。`;
+    } else if (currentStage === 5) {
+        dialogueEl.innerHTML = `定语指令 ( ✨ ) ：终极合成！将正确的定语元件拖拽注入句子线程的对应插槽中。`;
+    }
+}
+
+function nextScreen(stage) {
+    currentStage = stage;
+    updateHUD();
+    resetDialogueStyle();
+    
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    nextBtn.style.display = 'none';
+
+    if (stage >= 1 && stage <= 3) {
+        document.getElementById('screen-quiz').classList.add('active');
+        loadQuiz(stage - 1);
+    } else if (stage === 4) {
+        document.getElementById('screen-drag').classList.add('active');
+        loadDragScreen(3);
+    } else if (stage === 5) {
+        document.getElementById('screen-synthesis').classList.add('active');
+        loadSynthesisScreen(4);
+    } else if (stage === 6) {
+        document.getElementById('screen-celebration').classList.add('active');
+        nextBtn.style.display = 'none';
+        hudStageEl.innerText = 'MISSION COMPLETED';
+        progressTextEl.innerText = '100%';
+        progressFillEl.style.width = '100%';
+        triggerVisualFeedback(true, `全部测试完成！定语指令升级成功！`);
+    }
+}
+
+function loadQuiz(index) {
+    const data = quizData[index];
+    document.getElementById('quiz-title').innerText = data.title;
+    document.getElementById('quiz-phrase').innerHTML = `${data.phrase}`;
+    const container = document.getElementById('options-box');
+    container.innerHTML = '';
+    const feedbackEl = document.getElementById('quiz-feedback');
+    feedbackEl.classList.remove('show');
+
+    data.options.forEach((opt, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'btn';
+        btn.innerText = `[${String.fromCharCode(65 + idx)}] ${opt}`;
+        btn.onclick = () => {
+            const buttons = container.querySelectorAll('.btn');
+            buttons.forEach(b => b.disabled = true);
+            if (idx === data.correct) {
+                btn.classList.add('correct');
+                feedbackEl.style.color = 'var(--neon-green)';
+                feedbackEl.innerText = `✔ 指令正确载入：${data.feedback}`;
+                triggerVisualFeedback(true, `分析结果确确认！核心链路已成功升级。`);
+            } else {
+                btn.classList.add('wrong');
+                buttons[data.correct].classList.add('correct');
+                feedbackEl.style.color = 'var(--neon-pink)';
+                feedbackEl.innerText = `❌ 极性偏离：应为 ${data.feedback}`;
+                triggerVisualFeedback(false, `判定偏离！这里正确的定语形态应当是：${data.options[data.correct]}。`);
+            }
+            feedbackEl.classList.add('show');
+            nextBtn.style.display = 'block';
+        };
+        container.appendChild(btn);
+    });
+}
+
+let dragSuccessCount = 0;
+let neededDragCount = 0;
+
+function loadDragScreen(index) {
+    const data = quizData[index];
+    document.getElementById('drag-title').innerText = data.title;
+    document.getElementById('zone-before').querySelectorAll('.drag-item').forEach(el => el.remove());
+    document.getElementById('zone-after').querySelectorAll('.drag-item').forEach(el => el.remove());
+    
+    const container = document.getElementById('drag-items-container');
+    container.innerHTML = '';
+    const feedbackEl = document.getElementById('drag-feedback');
+    feedbackEl.classList.remove('show');
+    
+    dragSuccessCount = 0;
+    neededDragCount = data.items.length;
+    
+    data.items.forEach(itemData => {
+        const item = document.createElement('div');
+        item.className = 'drag-item';
+        item.id = itemData.id;
+        item.setAttribute('data-target', itemData.target);
+        item.innerText = itemData.text;
+        container.appendChild(item);
+    });
+    initDragAndDrop();
+}
+
+function initDragAndDrop() {
+    const items = document.querySelectorAll('#screen-drag .drag-item');
+    const zones = document.querySelectorAll('#screen-drag .drop-zone');
+    const feedbackEl = document.getElementById('drag-feedback');
+
+    items.forEach(item => {
+        let startX, startY, initialX = 0, initialY = 0;
+        item.onpointerdown = function(e) {
+            if (item.getAttribute('data-placed') === 'true') return;
+            item.setPointerCapture(e.pointerId);
+            item.style.zIndex = 1000;
+            item.style.position = 'relative';
+            startX = e.clientX;
+            startY = e.clientY;
+            
+            item.onpointermove = function(ev) {
+                let dx = ev.clientX - startX;
+                let dy = ev.clientY - startY;
+                item.style.transform = `translate(${initialX + dx}px, ${initialY + dy}px)`;
+                zones.forEach(z => {
+                    let rect = z.getBoundingClientRect();
+                    if (ev.clientX > rect.left && ev.clientX < rect.right && ev.clientY > rect.top && ev.clientY < rect.bottom) {
+                        z.classList.add('hover');
+                    } else {
+                        z.classList.remove('hover');
+                    }
+                });
+            };
+            
+            item.onpointerup = function(ev) {
+                item.onpointermove = null;
+                item.onpointerup = null;
+                item.releasePointerCapture(e.pointerId);
+                
+                let matchedZone = null;
+                zones.forEach(z => {
+                    z.classList.remove('hover');
+                    let rect = z.getBoundingClientRect();
+                    if (ev.clientX > rect.left && ev.clientX < rect.right && ev.clientY > rect.top && ev.clientY < rect.bottom) {
+                        matchedZone = z;
+                    }
+                });
+                
+                if (matchedZone) {
+                    let targetSlot = item.getAttribute('data-target');
+                    let zoneSlot = matchedZone.getAttribute('data-zone');
+                    
+                    if (targetSlot === zoneSlot) {
+                        matchedZone.appendChild(item);
+                        item.setAttribute('data-placed', 'true');
+                        item.style.position = 'static';
+                        item.style.transform = 'none';
+                        item.style.background = 'rgba(0, 255, 135, 0.15)';
+                        item.style.borderColor = 'var(--neon-green)';
+                        item.style.boxShadow = '0 0 10px rgba(0, 255, 135, 0.2)';
+                        item.style.cursor = 'default';
+                        dragSuccessCount++;
+                        
+                        triggerVisualFeedback(true, `卡片完美归位！空间位置契合。`);
+                        if (dragSuccessCount === neededDragCount) {
+                            feedbackEl.style.color = 'var(--neon-green)';
+                            feedbackEl.innerText = quizData[3].summary;
+                            feedbackEl.classList.add('show');
+                            triggerVisualFeedback(true, `解锁成功！单形容词前置，短语与从句一律后置！`);
+                            nextBtn.style.display = 'block';
+                        }
+                    } else {
+                        item.style.transform = 'none';
+                        feedbackEl.style.color = 'var(--neon-pink)';
+                        feedbackEl.innerText = "❌ 放置空间不匹配";
+                        feedbackEl.classList.add('show');
+                        triggerVisualFeedback(false, `分配受阻！字数少的短单词需要【前置】，多词的短语和从句需要【后置】哦。`);
+                        setTimeout(() => feedbackEl.classList.remove('show'), 1500);
+                    }
+                } else {
+                    item.style.transform = 'none';
+                }
+            };
+        };
+    });
+}
+
+let synthQuestionIndex = 0;
+
+const synthesisQuestions = [
+    {
+        before: "I have a",
+        after: "garden.",
+        answer: "beautiful",
+        cn: "合成目标：我有一个漂亮的花园。",
+        choices: ["beautiful", "heavy", "interesting"]
+    },
+    {
+        before: "The map",
+        after: "is mine.",
+        answer: "on the wall",
+        cn: "合成目标：墙上的那张地图是我的。",
+        choices: ["on the wall", "under the keyboard", "from that school"]
+    },
+    {
+        before: "The car",
+        after: "belongs to Tom.",
+        answer: "which is parked outside",
+        cn: "合成目标：停在外面的那辆车是汤姆的。",
+        choices: ["which is parked outside", "who speaks French", "from that school"]
+    }
+];
+
+function loadSynthesisScreen(index) {
+    const data = quizData[index];
+    document.getElementById('synth-title').innerText = data.title;
+    synthQuestionIndex = 0;
+    nextBtn.style.display = 'none';
+    renderSynthesisQuestion();
+}
+
+function renderSynthesisQuestion() {
+    const q = synthesisQuestions[synthQuestionIndex];
+    const stepEl = document.getElementById('synth-step');
+    const sentenceEl = document.getElementById('synth-main-sentence');
+    const cnEl = document.getElementById('synth-cn');
+    const gridEl = document.getElementById('synth-choice-grid');
+    const feedbackEl = document.getElementById('synth-feedback');
+
+    stepEl.innerText = `MISSION ${synthQuestionIndex + 1} / ${synthesisQuestions.length}`;
+    sentenceEl.classList.toggle('final-clause-question', synthQuestionIndex === 2);
+    sentenceEl.innerHTML = `${q.before} <span class="synth-blank" id="synth-current-blank">&nbsp;</span> ${q.after}`;
+    cnEl.innerText = `（${q.cn}）`;
+    feedbackEl.classList.remove('show');
+    feedbackEl.innerText = '';
+    gridEl.innerHTML = '';
+    gridEl.classList.toggle('long-clause-mode', synthQuestionIndex === 2);
+
+    [...q.choices].sort(() => Math.random() - 0.5).forEach(choice => {
+        const btn = document.createElement('button');
+        btn.className = 'synth-choice';
+        btn.innerText = choice;
+        btn.onclick = () => handleSynthesisChoice(btn, choice);
+        gridEl.appendChild(btn);
+    });
+}
+
+function handleSynthesisChoice(btn, choice) {
+    const q = synthesisQuestions[synthQuestionIndex];
+    const feedbackEl = document.getElementById('synth-feedback');
+    const blank = document.getElementById('synth-current-blank');
+
+    if (choice === q.answer) {
+        document.querySelectorAll('.synth-choice').forEach(el => el.disabled = true);
+        btn.classList.add('correct');
+        blank.innerText = choice;
+        blank.classList.add('filled');
+
+        feedbackEl.style.color = 'var(--neon-green)';
+        feedbackEl.innerText = '✔ 指令匹配成功';
+        feedbackEl.classList.add('show');
+        triggerVisualFeedback(true, `定语元件匹配成功，继续锁定下一条指令！`);
+
+        setTimeout(() => {
+            if (synthQuestionIndex < synthesisQuestions.length - 1) {
+                synthQuestionIndex++;
+                renderSynthesisQuestion();
+            } else {
+                feedbackEl.innerText = '✔ 全部练习完成';
+                triggerVisualFeedback(true, `全部合成完成！定语指令升级成功！`);
+                setTimeout(() => nextScreen(6), 850);
+            }
+        }, 800);
+    } else {
+        btn.classList.add('wrong');
+        feedbackEl.style.color = 'var(--neon-pink)';
+        feedbackEl.innerText = '❌ 指令不匹配，再分析一下句意和位置';
+        feedbackEl.classList.add('show');
+        triggerVisualFeedback(false, `再看一眼句意：这里需要哪一种定语信息？`);
+        setTimeout(() => {
+            btn.classList.remove('wrong');
+            feedbackEl.classList.remove('show');
+        }, 900);
+    }
+}
+
+function handleNextStage() {
+    nextScreen(currentStage + 1);
+    if (currentStage < 5) {
+        nextBtn.innerText = '确认加载下一波指令 ➔';
+    }
+}
+</script>
+
+</body>
+</html>
