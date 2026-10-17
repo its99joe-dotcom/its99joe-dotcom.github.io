@@ -12,15 +12,17 @@ import {getAuth,signInAnonymously,onAuthStateChanged} from 'https://www.gstatic.
 import {getDatabase,ref,get,set,runTransaction,onValue,remove} from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js';
 const app=initializeApp({apiKey:"AIzaSyCg8G5aQayELLGq56naE5pjqJWD8kYigiY",authDomain:"birthday-vote-b4b2d.firebaseapp.com",databaseURL:"https://birthday-vote-b4b2d-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"birthday-vote-b4b2d",storageBucket:"birthday-vote-b4b2d.firebasestorage.app",messagingSenderId:"395347071842",appId:"1:395347071842:web:86b7b357b9ebd8d696d23b"});
 const auth=getAuth(app),db=getDatabase(app),root='birthday99/live2026';
+const originalVoter=document.getElementById('voter').innerHTML,originalAdmin=document.getElementById('admin').innerHTML;
 const $=id=>document.getElementById(id), esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
 const defaults={people:['9','天天','张帆','马泽渝','胖姐','明月','驴肉','胥姐','小面','姐姐','刘大姐'],programs:['节目一','节目二','节目三'],awards:['最佳还原奖','最佳表演奖','最佳创意奖'],open:false};
-let user=null,config=null,votes={},revealIndex=0,configured=false, unsubVotes=null;
+let user=null,config=null,votes={},revealIndex=0,configured=false, unsubVotes=null,initialView=false;
 const admin=()=>location.hash==='#admin', key=n=>encodeURIComponent(n).replace(/\./g,'%2E'), names=t=>t.split('\n').map(x=>x.trim()).filter(Boolean);
 const info=t=>$('notice').textContent=t;
 function draw(){
- const a=admin();$('admin').classList.toggle('hidden',!a);$('voter').classList.toggle('hidden',a);$('setup').classList.add('hidden');
+ const a=admin();
+ if(config && initialView){$('voter').innerHTML=originalVoter;$('admin').innerHTML=originalAdmin;bindButtons();initialView=false;}$('admin').classList.toggle('hidden',!a);$('voter').classList.toggle('hidden',a);$('setup').classList.add('hidden');
  if(!user){info('🟠 正在登录…');return}
- if(!config){info('🟠 等待主持人初始化派对');$('voter').innerHTML='<h2>🎂 派对尚未开启</h2><p>请主持人先进入管理页面。</p>';if(a){$('admin').innerHTML='<div class="card"><h2>🎂 首次初始化</h2><p>请主持人点击下方按钮创建派对。第一个初始化的设备将成为管理员，请不要提前公开链接。</p><button id="init" class="primary">我是主持人 · 创建派对</button></div>';$('init').onclick=init}return}
+ if(!config){initialView=true;info('🟠 等待主持人初始化派对');$('voter').innerHTML='<h2>🎂 派对尚未开启</h2><p>请主持人先进入管理页面。</p>';if(a){$('admin').innerHTML='<div class="card"><h2>🎂 首次初始化</h2><p>请主持人点击下方按钮创建派对。第一个初始化的设备将成为管理员，请不要提前公开链接。</p><button id="init" class="primary">我是主持人 · 创建派对</button></div>';$('init').onclick=init}return}
  info(config.open?'🟢 投票进行中':'🟡 投票未开始或已结束');
  const people=config.people||[], programs=config.programs||[],awards=config.awards||[];
  if(!a){$('voterName').innerHTML='<option value="">请选择姓名</option>'+people.map(n=>'<option>'+esc(n)+'</option>').join('');$('ballot').innerHTML=awards.map((aw,i)=>'<div class="award"><b>🏆 '+esc(aw)+'</b>'+programs.map(p=>'<label class="choice"><input type="radio" name="a'+i+'" value="'+esc(p)+'"> '+esc(p)+'</label>').join('')+'</div>').join('');$('voteBtn').disabled=!config.open;}
@@ -28,13 +30,16 @@ function draw(){
 }
 async function init(){try{const snap=await runTransaction(ref(db,root+'/config'),v=>v===null?{...defaults,owner:user.uid,peopleMap:Object.fromEntries(defaults.people.map(x=>[key(x),true]))}:undefined,{applyLocally:false});if(!snap.committed)alert('派对已经由另一台设备初始化，请刷新。')}catch(e){alert('初始化失败：'+e.message)}}
 async function saveConfig(changes){if(!config||config.owner!==user.uid)return alert('只有主持人可以操作');try{await set(ref(db,root+'/config'),{...config,...changes})}catch(e){alert('保存失败：'+e.message)}}
+function bindButtons(){
 $('saveBtn').onclick=()=>{const p=names($('programs').value),u=names($('people').value),a=names($('awards').value);if(!p.length||!u.length||a.length!==3||new Set(u).size!==u.length)return alert('请至少设置一个节目、三个奖项，且姓名不能重复');if(Object.keys(votes).length&&!confirm('已有投票！修改设置可能影响结果，建议先清空选票。继续吗？'))return;saveConfig({programs:p,people:u,awards:a,peopleMap:Object.fromEntries(u.map(x=>[key(x),true]))})};
 $('startBtn').onclick=()=>saveConfig({open:true});$('endBtn').onclick=()=>saveConfig({open:false});
 $('resetBtn').onclick=async()=>{if(confirm('确认清空所有选票吗？无法恢复！'))try{await remove(ref(db,root+'/votes'));await saveConfig({open:false})}catch(e){alert(e.message)}};
-$('voteBtn').onclick=async()=>{const name=$('voterName').value;if(!name)return alert('请选择姓名');const picks=config.awards.map((_,i)=>document.querySelector('input[name="a'+i+'"]:checked')?.value);if(picks.some(x=>!x))return alert('请完成三个奖项的选择');$('voteBtn').disabled=true;try{const latest=(await get(ref(db,root+'/config'))).val();if(!latest?.open||!latest.peopleMap?.[key(name)])throw Error('投票已关闭或姓名不在名单内');const payload={uid:user.uid,name,picks};const result=await runTransaction(ref(db,root+'/votes/'+key(name)),v=>v===null?payload:undefined,{applyLocally:false});if(!result.committed)throw Error('这个名字已经投过票啦');$('voteMsg').textContent='🎉 投票成功！谢谢你！';$('voteBtn').disabled=true}catch(e){alert(e.message);$('voteBtn').disabled=false}};
+$('voteBtn').onclick=async()=>{const name=$('voterName').value;if(!name)return alert('请选择姓名');const picks=config.awards.map((_,i)=>document.querySelector('input[name="a'+i+'"]:checked')?.value);if(picks.some(x=>!x))return alert('请完成三个奖项的选择');$('voteBtn').disabled=true;try{const latest=(await get(ref(db,root+'/config'))).val();if(!latest?.open||!latest.peopleMap?.[key(name)])throw Error('投票已关闭或姓名不在名单内');const payload={uid:user.uid,name,picks};await set(ref(db,root+'/votes/'+key(name)),payload);$('voteMsg').textContent='🎉 投票成功！谢谢你！';$('voteBtn').disabled=true}catch(e){alert(e.message);$('voteBtn').disabled=false}};
 $('revealBtn').onclick=()=>{const all=Object.values(votes);if(!all.length)return alert('还没有选票');const i=revealIndex++%config.awards.length,counts={};all.forEach(v=>{const x=v?.picks?.[i];if(x)counts[x]=(counts[x]||0)+1});const top=Math.max(0,...Object.values(counts)),w=Object.keys(counts).filter(k=>counts[k]===top);$('revealArea').innerHTML='<div class="award"><b>🏆 '+esc(config.awards[i])+'</b><p class="big">'+esc(w.join(' & ')||'暂无')+'</p><small>得票 '+top+' · '+(w.length>1?'并列获奖':'恭喜！')+'</small></div>'};
+}
 function listenVotes(){if(unsubVotes){unsubVotes();unsubVotes=null}if(user&&config&&config.owner===user.uid){unsubVotes=onValue(ref(db,root+'/votes'),s=>{votes=s.val()||{};draw()},e=>info('读取票数失败：'+e.message))}}
 onAuthStateChanged(auth,u=>{user=u;if(u){onValue(ref(db,root+'/config'),s=>{const next=s.val();const ownerChanged=next?.owner!==config?.owner;config=next;draw();if(ownerChanged)listenVotes()},e=>info('数据库读取失败：'+e.message))}});
-signInAnonymously(auth).catch(e=>info('匿名登录失败：'+e.message));
-window.addEventListener('hashchange',draw);
+signInAnonymously(auth).catch(e=>info('🔴 登录失败：'+e.code+'。请尝试用 Safari 打开，或检查网络。'));
+setTimeout(()=>{if(!user)info('🔴 连接超时。请尝试在 Safari 打开网页，并确认网络可以访问 Firebase / Google 服务。')},12000);
+bindButtons();window.addEventListener('hashchange',draw);
 </script></body></html>
